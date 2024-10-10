@@ -92,63 +92,63 @@ print(X_train.shape, X_test.shape)
 # 3. Select the best value for k, and rerun the classifier on our full 5000 set of training examples.
 # 4. Discussion: Discuss your understanding.
 
-# scaler = StandardScaler()
-# X_train_scaled = scaler.fit_transform(X_train)
-# X_test_scaled = scaler.transform(X_test)
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
 
-# k = 5
-# knn = KNeighborsClassifier(n_neighbors=k)
-# knn.fit(X_train_scaled, y_train)
+k = 5
+knn = KNeighborsClassifier(n_neighbors=k)
+knn.fit(X_train_scaled, y_train)
 
-# y_pred = knn.predict(X_test_scaled)
+y_pred = knn.predict(X_test_scaled)
 
-# # Print the classification report
-# print(classification_report(y_test, y_pred))
+# Print the classification report
+print(classification_report(y_test, y_pred))
 
-# # Confusion Matrix
-# conf_matrix = confusion_matrix(y_test, y_pred)
-# print("Confusion Matrix:\n", conf_matrix)
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+print("Confusion Matrix:\n", conf_matrix)
 
-# plt.figure(figsize=(12, 8))
-# for i in range(8):
-#     plt.subplot(2, 4, i + 1)
-#     plt.imshow(X_test[i].reshape(32, 32, 3).astype('uint8'))
-#     plt.title(f'Predicted: {classes[y_pred[i]]}')
-#     plt.axis('off')
-# plt.show()
+plt.figure(figsize=(12, 8))
+for i in range(8):
+    plt.subplot(2, 4, i + 1)
+    plt.imshow(X_test[i].reshape(32, 32, 3).astype('uint8'))
+    plt.title(f'Predicted: {classes[y_pred[i]]}')
+    plt.axis('off')
+plt.show()
 
-# ## k-fold cross validation
+## k-fold cross validation
 
-# X_train = X_train.astype('float32') / 255.0
-# X_test = X_test.astype('float32') / 255.0
+X_train = X_train.astype('float32') / 255.0
+X_test = X_test.astype('float32') / 255.0
 
-# X_train_flat = X_train.reshape(len(X_train), -1)
-# X_test_flat = X_test.reshape(len(X_test), -1)
+X_train_flat = X_train.reshape(len(X_train), -1)
+X_test_flat = X_test.reshape(len(X_test), -1)
 
-# k_values = range(1, 21)  # Test k values from 1 to 20
-# mean_accuracies = []
-# std_accuracies = []
+k_values = range(1, 21)  # Test k values from 1 to 20
+mean_accuracies = []
+std_accuracies = []
 
-# for k in k_values:
-#     knn = KNeighborsClassifier(n_neighbors=k)
-#     kfold = KFold(n_splits=5, shuffle=True, random_state=42)
-#     cv_scores = cross_val_score(knn, X_train_flat, y_train, cv=kfold, scoring='accuracy')
-#     mean_accuracies.append(np.mean(cv_scores))
-#     std_accuracies.append(np.std(cv_scores))
-
-
-# plt.errorbar(k_values, mean_accuracies, yerr=std_accuracies, fmt='-o', ecolor='red', capsize=5)
-# plt.xlabel('k (Number of Neighbors)')
-# plt.ylabel('Mean Accuracy')
-# plt.title('KNN Cross-Validation Accuracy with Error Bars')
-# plt.show()
-
-# best_k = k_values[np.argmax(mean_accuracies)]
-# print(f'Best value of k: {best_k}')
+for k in k_values:
+    knn = KNeighborsClassifier(n_neighbors=k)
+    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
+    cv_scores = cross_val_score(knn, X_train_flat, y_train, cv=kfold, scoring='accuracy')
+    mean_accuracies.append(np.mean(cv_scores))
+    std_accuracies.append(np.std(cv_scores))
 
 
-# knn_best = KNeighborsClassifier(n_neighbors=best_k) 
-# knn_best.fit(X_train, y_train) 
-# y_pred_best = knn_best.predict(X_test)
-# print(classification_report(y_test, y_pred_best))
+plt.errorbar(k_values, mean_accuracies, yerr=std_accuracies, fmt='-o', ecolor='red', capsize=5)
+plt.xlabel('k (Number of Neighbors)')
+plt.ylabel('Mean Accuracy')
+plt.title('KNN Cross-Validation Accuracy with Error Bars')
+plt.show()
+
+best_k = k_values[np.argmax(mean_accuracies)]
+print(f'Best value of k: {best_k}')
+
+
+knn_best = KNeighborsClassifier(n_neighbors=best_k) 
+knn_best.fit(X_train, y_train) 
+y_pred_best = knn_best.predict(X_test)
+print(classification_report(y_test, y_pred_best))
 
