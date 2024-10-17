@@ -158,9 +158,27 @@ def softmax_loss_vectorized(W, X, y, reg):
     #############################################################################
     # *****START OF YOUR CODE*****
 
-    pass
+    # pass
 
-    # *****END OF YOUR CODE*****
+    num_train = X.shape[0]
+    
+    # Computing scores and normalizing for numerical stability
+    scores = X.dot(W)
+    scores -= np.max(scores, axis=1, keepdims=True)
+    
+    # Computing softmax probabilities
+    exp_scores = np.exp(scores)
+    probs = exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+    
+    # Computing the loss
+    correct_class_probs = probs[range(num_train), y]
+    loss = -np.sum(np.log(correct_class_probs)) / num_train
+    loss += reg * np.sum(W * W)
+    
+    # Computing the gradient
+    probs[range(num_train), y] -= 1
+    dW = X.T.dot(probs) / num_train
+    dW += 2 * reg * W
 
     return loss, dW
 
