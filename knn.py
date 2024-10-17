@@ -119,6 +119,13 @@ plt.title('Confusion Matrix')
 plt.show()         # plotting confusion matrix
 
 # increased the subsample from 500 to a higher number .
+
+# In order to further Improve the KNN model I am going to perform the following steps
+# 1. Normalize the pixel values of the images to scale them between 0 and 1.
+# 2. KNN might struggle with high-dimensional data. Reducing the dimensionality using PCA.
+# 3. Try different values of K and experiment with different distance metrics. (Grid Search))
+# 4. plot the data to see the clusters.
+
 X_train, y_train, X_test, y_test = data_utils.load_CIFAR10(cifar10_dir)
 
 # Checking the size of the training and testing data
@@ -142,6 +149,10 @@ for y, cls in enumerate(classes):
             plt.title(cls)
 plt.show()
 
+# Normalize the pixel values to [0, 1] range
+X_train = X_train / 255.0
+X_test = X_test / 255.0
+
 num_training = 5000
 mask = list(range(num_training))
 X_train = X_train[mask]
@@ -153,12 +164,19 @@ X_test = X_test[mask]
 y_test = y_test[mask]
 
 # reshaping data and placing into rows
-X_train = np.reshape(X_train, (X_train.shape[0], -1))
-X_test = np.reshape(X_test, (X_test.shape[0], -1))
-print(X_train.shape, X_test.shape)
+X_train_flat = np.reshape(X_train, (X_train.shape[0], -1))
+X_test_flat = np.reshape(X_test, (X_test.shape[0], -1))
+print(X_train_flat.shape, X_test_flat.shape)
 
-X_train_reshape = X_train.reshape(X_train.shape[0], -1)
-X_test_reshape = X_test.reshape(X_test.shape[0], -1)
+#Reducing the dimensionality using PCA.
+# Reduce dimensions to 50 principal components
+pca = PCA(n_components=30)
+X_train_pca = pca.fit_transform(X_train_flat)
+X_test_pca = pca.transform(X_test_flat)
+
+#Checking the shape of the data after dimensionality reduction
+
+print(X_train_pca.shape, X_test_pca.shape)
 
 knn = KNeighborsClassifier(n_neighbors=5)
 knn.fit(X_train_reshape, y_train)
@@ -169,6 +187,58 @@ Y_pred = knn.predict(X_test_reshape)
 accuracy = np.mean(Y_pred == y_test)
 
 print("Accuracy of k-NN model on test set is:", accuracy)
+#accuracy = 0.2628
+
+# checking class imbalance 
+plt.hist(y_train, bins=10)
+plt.show()
+# 4. plot the data to see the clusters.
+
+# Plot the first two principal components
+plt.figure(figsize=(10, 8))
+scatter = plt.scatter(X_train_pca[:, 0], X_train_pca[:, 1], c=y_train, cmap='tab10', alpha=0.7)
+
+# Add a colorbar for class labels
+legend = plt.legend(*scatter.legend_elements(), title="Classes")
+plt.gca().add_artist(legend)
+
+plt.title('Data Visualization after PCA (First Two Principal Components)')
+plt.xlabel('Principal Component 1')
+plt.ylabel('Principal Component 2')
+plt.show()
+#(Grid Search)
+
+from sklearn.model_selection import GridSearchCV
+from sklearn.neighbors import KNeighborsClassifier
+
+# Set up KNN with grid search for different K values and distance metrics
+param_grid = {
+    'n_neighbors': [3, 5, 7, 9, 11, 13, 15, 17, 19, 21],
+    'metric': ['euclidean', 'manhattan', 'cosine']
+}
+
+knn = KNeighborsClassifier()
+grid_search = GridSearchCV(knn, param_grid, cv=10, scoring='accuracy')
+grid_search.fit(X_train_pca, y_train)
+print("Best parameters:", grid_search.best_params_)
+
+# Use the best model
+best_knn = grid_search.best_estimator_
+y_pred = best_knn.predict(X_test_pca)
+from sklearn.metrics import accuracy_score
+
+# Calculate the accuracy of the k-NN model on the test set with 3000 images
+# Predict on the training set
+y_train_pred = best_knn.predict(X_train_pca)
+# Predict on the test set
+y_test_pred = best_knn.predict(X_test_pca)
+train_accuracy = accuracy_score(y_train, y_train_pred)
+test_accuracy = accuracy_score(y_test, y_test_pred)
+# Print both accuracies
+print(f"Training Accuracy: {train_accuracy * 100:.2f}%")
+print(f"Test Accuracy: {test_accuracy * 100:.2f}%")
+# accuracy = 44.1%
+
 
 # we will chak for all values of K from 1 to 21
 k_values = range(1, 21)
@@ -192,3 +262,7 @@ plt.xlabel('Number of Neighbors k')
 plt.ylabel('k-fold Cross-Validated Accuracy')
 plt.show()
 
+# We saw a huge improvement in the performance of the model 
+# after increasing the total number if images. 
+# Model accuracy improved from 22% to 44% after implementing
+# the 5 steps we listed above.
