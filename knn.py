@@ -224,3 +224,50 @@ best_knn.fit(X_train_full, y_train_full)
 
 test_accuracy = best_knn.score(X_test_full, y_test_full)
 print(f"Test set accuracy: {test_accuracy:.4f}")
+
+#GridSearch
+from sklearn.model_selection import GridSearchCV
+
+
+# Set up k-NN and GridSearchCV
+knn = KNeighborsClassifier()
+
+# Set up the parameter grid for GridSearchCV
+param_grid = {
+    'n_neighbors': [3, 5, 7, 9, 11],
+    'metric': ['euclidean', 'manhattan', 'minkowski'],
+    'weights': ['uniform', 'distance'],
+    'p': [1, 2, 3]  # For Minkowski distance, where p=1 is Manhattan, p=2 is Euclidean
+}
+
+# Initialize GridSearchCV
+grid_search = GridSearchCV(knn, param_grid, cv=5, verbose=1, n_jobs=-1)
+
+# Fit the model using GridSearchCV
+grid_search.fit(X_train_full, y_train_full)
+
+# Get the best parameters and the best score
+print(f"Best parameters from GridSearchCV: {grid_search.best_params_}")
+print(f"Best cross-validation accuracy: {grid_search.best_score_:.4f}")
+
+# Evaluate the best model on the test set
+best_knn = grid_search.best_estimator_
+y_pred = best_knn.predict(X_test_full)
+
+# Calculate and display accuracy
+test_accuracy = accuracy_score(y_test_full, y_pred)
+print(f"Test set accuracy: {test_accuracy:.4f}")
+
+# Generate and display the confusion matrix
+cm = confusion_matrix(y_test_full, y_pred)
+plt.figure(figsize=(10, 8))
+sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+plt.title('Confusion Matrix for Best k-NN Model (GridSearch)')
+plt.ylabel('True label')
+plt.xlabel('Predicted label')
+plt.show()
+
+# Display classification report
+class_names = ['airplane', 'automobile', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+print("Classification Report:")
+print(classification_report(y_test_full, y_pred, target_names=class_names))
