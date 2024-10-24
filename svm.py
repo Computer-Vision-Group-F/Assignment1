@@ -93,11 +93,6 @@ import numpy as np
 from random import shuffle
 from past.builtins import xrange
 
-from builtins import range
-import numpy as np
-from random import shuffle
-from past.builtins import xrange
-
 def svm_loss_naive(W, X, y, reg):
     """
     Structured SVM loss function, naive implementation (with loops).
@@ -158,7 +153,6 @@ W = np.random.randn(3073, 10) * 0.0001
 loss, grad = svm_loss_naive(W, X_dev, y_dev, 0.000005)
 print('loss: %f' % (loss, ))
 
-
 # Once you've implemented the gradient, recompute it with the code below
 # and gradient check it with the function we provided for you
 
@@ -204,7 +198,8 @@ def svm_loss_vectorized(W, X, y, reg):
     margins[np.arange(num_train), y] = 0  # Set the correct class margin to zero
 
     # Compute the loss: average over the number of training samples and add regularization
-    loss = np.sum(margins) / num_train + reg * np.sum(W * W)
+    loss = np.sum(margins) / num_train 
+    loss=+ reg * np.sum(W * W)
 
     pass
 
@@ -226,6 +221,7 @@ def svm_loss_vectorized(W, X, y, reg):
     row_sum = np.sum(indicator, axis=1)  # Shape (N,)
     
     # Create an indicator matrix for gradient computation
+    indicator= indicator.astype(float)
     indicator[np.arange(num_train), y] = -row_sum  # Subtract the counts from the correct classes
 
     # Compute the gradient
