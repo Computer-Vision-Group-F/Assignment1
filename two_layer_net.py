@@ -102,7 +102,7 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000):
     we used for the SVM, but condensed to a single function.  
     """
     # Load the raw CIFAR-10 data
-    cifar10_dir = '...'
+    cifar10_dir = './data/cifar-10-batches-py'
     
     # Cleaning up variables to prevent loading data multiple times (which may cause memory issue)
     try:
