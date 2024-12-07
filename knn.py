@@ -1,35 +1,11 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# # Assignment 1-1: K-Nearest Neighbors (k-NN)
-
-# In this notebook you will implement a K-Nearest Neighbors classifier on the [CIFAR-10 dataset](https://www.cs.toronto.edu/~kriz/cifar.html).
-# 
-# Recall that the K-Nearest Neighbor classifier does the following:
-# - During training, the classifier simply memorizes the training data
-# - During testing, test images are compared to each training image; the predicted label is the majority vote among the K nearest training examples.
-# 
-# After implementing the K-Nearest Neighbor classifier, you will use *cross-validation* to find the best value of K.
-# 
-# The goals of this exercise are to go through a simple example of the data-driven image classification pipeline, and also to practice writing efficient, vectorized code in [PyTorch](https://pytorch.org/).
-
-# ## Downloading the CIFAR-10 dataset 
 import numpy as np
 import matplotlib.pyplot as plt
 import data_utils
 import download
-from sklearn.preprocessing import StandardScaler
-from sklearn.neighbors import KNeighborsClassifier
-from sklearn.metrics import classification_report, confusion_matrix
-from sklearn.model_selection import KFold
-from sklearn.model_selection import cross_val_score
 
 url = "https://www.cs.toronto.edu/~kriz/cifar-10-python.tar.gz"
 download_dir = "./data"
 download.maybe_download_and_extract(url,download_dir)
-
-
-## Loading raw files and reading them as training and testing datasets
 
 cifar10_dir = './data/cifar-10-batches-py'
 X_train, y_train, X_test, y_test = data_utils.load_CIFAR10(cifar10_dir)
@@ -40,9 +16,6 @@ print('Training labels shape: ', y_train.shape)
 print('Test data shape: ', X_test.shape)
 print('Test labels shape: ', y_test.shape)
 
-
-# ## Visualizing dataset samples
-# To give you a sense of the nature of the images in CIFAR-10, this cell visualizes some random examples from the training set.
 
 classes = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
 num_classes = len(classes)
@@ -59,13 +32,32 @@ for y, cls in enumerate(classes):
             plt.title(cls)
 plt.show()
 
+import matplotlib.pyplot as plt
+import numpy as np
 
-# ## Subsample the dataset
-# When implementing machine learning algorithms, it's usually a good idea to use a small sample of the full dataset. This way your code will run much faster, allowing for more interactive and efficient development. Once you are satisfied that you have correctly implemented the algorithm, you can then rerun with the entire dataset.
+classes = ['plane', 'car', 'bird', 'cat', 'deer', 'dog', 'frog', 'horse', 'ship', 'truck']
+num_classes = len(classes)
 
-# We will subsample the data to use only 500 training examples and 250 test examples:
+fig, axes = plt.subplots(1, num_classes, figsize=(15, 5))
+for i, cls in enumerate(classes):
+    idxs = np.flatnonzero(y_train == i)
+    mean_image = np.mean(X_train[idxs], axis=0).astype('uint8')
+    axes[i].imshow(mean_image)
+    axes[i].axis('off')
+    axes[i].set_title(cls)
+plt.show()
 
-# Memory error prevention by subsampling data
+import matplotlib.pyplot as plt
+import numpy as np
+
+plt.figure(figsize=(10, 5))
+plt.hist(y_train, bins=np.arange(num_classes + 1) - 0.5, ec='black', alpha=0.7)
+plt.xticks(np.arange(num_classes), classes)
+plt.xlabel('Classes')
+plt.ylabel('Number of Samples')
+plt.title('Histogram of Class Distribution')
+plt.show()
+
 
 num_training = 500
 mask = list(range(num_training))
@@ -83,72 +75,79 @@ X_test = np.reshape(X_test, (X_test.shape[0], -1))
 print(X_train.shape, X_test.shape)
 
 
-# # K-Nearest Neighbors (k-NN)
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.metrics import classification_report, accuracy_score
 
-# Now that we have examined and prepared our data, it is time to implement the kNN classifier. We can break the process down into two steps:
-# 
-# 1. Perform k-Nearest neighbours algorithm on the CiFAR-10 dataset to classify test images. 
-# 2. Perform k-fold cross validation and plot the trend line with error bars that correspond to standard deviation to find the best value of the 'k' hyper parameter and best accuracy on the dataset.
-# 3. Select the best value for k, and rerun the classifier on our full 5000 set of training examples.
-# 4. Discussion: Discuss your understanding.
+# Initialize the k-NN classifier
+k = 5  # You can change this number to see different results
+classifier = KNeighborsClassifier(n_neighbors=k)
 
-scaler = StandardScaler()
-X_train_scaled = scaler.fit_transform(X_train)
-X_test_scaled = scaler.transform(X_test)
+# Train the classifier
+classifier.fit(X_train, y_train)
 
-k = 5
-knn = KNeighborsClassifier(n_neighbors=k)
-knn.fit(X_train_scaled, y_train)
+# Predict on the test data
+y_pred = classifier.predict(X_test)
 
-y_pred = knn.predict(X_test_scaled)
+# Print out the predictions
+print("First 10 Predicted labels: ", y_pred[:10])
+print("First 10 Actual labels: ", y_test[:10])
 
-# Print the classification report
-print(classification_report(y_test, y_pred))
+# Evaluate the classifier
+print("Classification report:\n", classification_report(y_test, y_pred))
+print("Accuracy: ", accuracy_score(y_test, y_pred))
 
-# Confusion Matrix
-conf_matrix = confusion_matrix(y_test, y_pred)
-print("Confusion Matrix:\n", conf_matrix)
+from sklearn.model_selection import cross_val_score
+import matplotlib.pyplot as plt
 
-plt.figure(figsize=(12, 8))
-for i in range(8):
-    plt.subplot(2, 4, i + 1)
-    plt.imshow(X_test[i].reshape(32, 32, 3).astype('uint8'))
-    plt.title(f'Predicted: {classes[y_pred[i]]}')
-    plt.axis('off')
-plt.show()
+# Set the range of k to test
+k_values = range(1, 26)  # Testing k from 1 to 25
+mean_scores = []
+std_dev_scores = []
 
-## k-fold cross validation
-
-X_train = X_train.astype('float32') / 255.0
-X_test = X_test.astype('float32') / 255.0
-
-X_train_flat = X_train.reshape(len(X_train), -1)
-X_test_flat = X_test.reshape(len(X_test), -1)
-
-k_values = range(1, 21)  # Test k values from 1 to 20
-mean_accuracies = []
-std_accuracies = []
-
+# Perform 5-fold cross-validation for each k
 for k in k_values:
-    knn = KNeighborsClassifier(n_neighbors=k)
-    kfold = KFold(n_splits=5, shuffle=True, random_state=42)
-    cv_scores = cross_val_score(knn, X_train_flat, y_train, cv=kfold, scoring='accuracy')
-    mean_accuracies.append(np.mean(cv_scores))
-    std_accuracies.append(np.std(cv_scores))
+    classifier = KNeighborsClassifier(n_neighbors=k)
+    # Obtain scores for 5-fold cross-validation
+    scores = cross_val_score(classifier, X_train, y_train, cv=5, scoring='accuracy')
+    mean_scores.append(np.mean(scores))
+    std_dev_scores.append(np.std(scores))
 
-
-plt.errorbar(k_values, mean_accuracies, yerr=std_accuracies, fmt='-o', ecolor='red', capsize=5)
-plt.xlabel('k (Number of Neighbors)')
-plt.ylabel('Mean Accuracy')
-plt.title('KNN Cross-Validation Accuracy with Error Bars')
+# Plotting the trend line with error bars
+plt.errorbar(k_values, mean_scores, yerr=std_dev_scores, fmt='-o', ecolor='red', capsize=5)
+plt.title('k-NN Varying number of neighbors (k)')
+plt.xlabel('Number of Neighbors (k)')
+plt.ylabel('Cross-Validated Accuracy')
+plt.grid(True)
 plt.show()
 
-best_k = k_values[np.argmax(mean_accuracies)]
-print(f'Best value of k: {best_k}')
 
+best_k_index = np.argmax(mean_scores)
+best_k = k_values[best_k_index]
+print(f"Best k: {best_k} with an average cross-validation accuracy of {mean_scores[best_k_index]:.3f}")
 
-knn_best = KNeighborsClassifier(n_neighbors=best_k) 
-knn_best.fit(X_train, y_train) 
-y_pred_best = knn_best.predict(X_test)
-print(classification_report(y_test, y_pred_best))
+# Assuming you have a function or a way to load more data
+# For this example, let's say you reload and combine multiple batches to have more training data
+# Ensure you have up to 5000 samples for training
+X_train, y_train, _, _ = data_utils.load_CIFAR10(cifar10_dir)  # Adjust this line if needed to get more data
+
+# Subsample 5000 examples for training
+if X_train.shape[0] > 5000:
+    indices = np.random.choice(X_train.shape[0], 5000, replace=False)
+    X_train = X_train[indices]
+    y_train = y_train[indices]
+
+# Reshape the data into rows again
+X_train = np.reshape(X_train, (X_train.shape[0], -1))
+
+# Initialize and train the k-NN classifier with the best k
+classifier = KNeighborsClassifier(n_neighbors=best_k)
+classifier.fit(X_train, y_train)
+
+# If you also have a larger test set, use it; otherwise, use the original
+# Let's assume X_test and y_test are already defined and preprocessed
+y_pred = classifier.predict(X_test)
+
+# Evaluate the classifier
+accuracy = accuracy_score(y_test, y_pred)
+print(f"Accuracy on the test set with k={best_k}: {accuracy:.3f}")
 
