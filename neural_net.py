@@ -29,6 +29,7 @@ class TwoLayerNet(object):
 
         W1: First layer weights; has shape (D, H)
         b1: First layer biases; has shape (H,)
+
         W2: Second layer weights; has shape (H, C)                                
         W2: Second layer weights; has shape (H, C)
         b2: Second layer biases; has shape (C,)
