@@ -1,5 +1,5 @@
 from __future__ import print_function
-import os
+
 from builtins import range
 from builtins import object
 import numpy as np
@@ -29,8 +29,6 @@ class TwoLayerNet(object):
 
         W1: First layer weights; has shape (D, H)
         b1: First layer biases; has shape (H,)
-
-        W2: Second layer weights; has shape (H, C)                                
         W2: Second layer weights; has shape (H, C)
         b2: Second layer biases; has shape (C,)
 
@@ -82,8 +80,20 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE*****
 
-        pass
 
+        # Compute hidden layer using ReLU activation
+        hidden_activation = np.maximum(0, X.dot(W1) + b1)  
+        # Compute class scores
+        scores = hidden_activation.dot(W2) + b2
+        # Normalize scores for numerical stability
+        normalized_scores = scores - np.max(scores, axis=1, keepdims=True)  
+        # Calculate softmax probabilities
+        softmax_probs = np.exp(normalized_scores) / np.sum(np.exp(normalized_scores), axis=1, keepdims=True)  
+        # Compute log probabilities for correct classes
+        log_probs_correct = -np.log(softmax_probs[np.arange(N), y])  
+        
+        
+        
         # *****END OF YOUR CODE*****
 
         # If the targets are not given then jump out, we're done
@@ -100,7 +110,16 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE*****
 
-        pass
+
+
+        # Calculate data loss using log probabilities of correct classes
+        average_data_loss = np.sum(log_probs_correct) / N  
+        # Calculate regularization loss for weight matrices
+        regularization_loss = 0.5 * reg * (np.sum(W1 * W1) + np.sum(W2 * W2))  
+        # Compute total loss as sum of data loss and regularization loss
+        loss = average_data_loss + regularization_loss
+
+
 
         # *****END OF YOUR CODE*****
 
@@ -113,7 +132,22 @@ class TwoLayerNet(object):
         #############################################################################
         # *****START OF YOUR CODE*****
 
-        pass
+        # Gradient of scores
+        derivatives_scores = softmax_probs
+        derivatives_scores[range(N), y] -= 1
+        derivatives_scores /= N
+        
+        # Gradient for W2 and b2
+        grads['W2'] = hidden_activation.T.dot(derivatives_scores) + reg * W2
+        grads['b2'] = np.sum(derivatives_scores, axis=0)
+        
+        # Backpropagate into hidden layer
+        derivatives_hidden = derivatives_scores.dot(W2.T)
+        derivatives_hidden[hidden_activation <= 0] = 0
+        
+        # Gradient for W1 and b1
+        grads['W1'] = X.T.dot(derivatives_hidden) + reg * W1
+        grads['b1'] = np.sum(derivatives_hidden, axis=0)
 
         # *****END OF YOUR CODE*****
 
@@ -158,7 +192,8 @@ class TwoLayerNet(object):
             #########################################################################
             # *****START OF YOUR CODE*****
 
-            pass
+            # Randomly select indices for the minibatch
+            batch_index = np.random.choice(num_train, batch_size)
 
             # *****END OF YOUR CODE*****
 
@@ -173,8 +208,6 @@ class TwoLayerNet(object):
             # stored in the grads dictionary defined above.                         #
             #########################################################################
             # *****START OF YOUR CODE*****
-
-            pass
 
             # *****END OF YOUR CODE*****
 
@@ -219,8 +252,6 @@ class TwoLayerNet(object):
         # TODO: Implement this function; it should be VERY simple!                #
         ###########################################################################
         # *****START OF YOUR CODE*****
-
-        pass
 
         # *****END OF YOUR CODE*****
 
